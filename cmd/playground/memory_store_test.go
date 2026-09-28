@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 func TestMemoryStore_DeleteWorkflowRun_CascadeTaskRuns(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/hook"
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/hook"
+	"github.com/BabySid/aether-go/model"
 )
 
 type captureNotifier struct {

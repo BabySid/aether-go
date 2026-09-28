@@ -1,8 +1,8 @@
 package internal
 
 import (
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // ResolveTaskDecl looks up the task definition (*model.Task) and call-site node

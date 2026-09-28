@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/expr"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/secret"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/expr"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/secret"
 )
 
 // Binder merges template-declared inputs with call-site arguments and resolves

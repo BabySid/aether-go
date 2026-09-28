@@ -14,7 +14,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/BabySid/aether/timeout"
+	"github.com/BabySid/aether-go/timeout"
 )
 
 // PollingWatcher scans the MemoryStore at a fixed interval and emits

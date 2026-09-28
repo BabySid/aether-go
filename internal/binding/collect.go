@@ -3,11 +3,11 @@ package binding
 import (
 	"context"
 
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/expr"
-	ivars "github.com/BabySid/aether/internal/vars"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/expr"
+	ivars "github.com/BabySid/aether-go/internal/vars"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // Collector assembles container-level outputs from child task run results.

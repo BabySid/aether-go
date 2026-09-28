@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // Plugin is the executor plugin interface. All executor implementations must satisfy it.

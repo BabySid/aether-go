@@ -4,8 +4,8 @@ package main
 import (
 	"fmt"
 
-	aether "github.com/BabySid/aether"
-	"github.com/BabySid/aether/model"
+	aether "github.com/BabySid/aether-go"
+	"github.com/BabySid/aether-go/model"
 )
 
 // CronAssertion is the top-level structure of an assertion file for CronWorkflow.

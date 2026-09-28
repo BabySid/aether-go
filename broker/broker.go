@@ -12,7 +12,7 @@ package broker
 import (
 	"context"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // TaskBroker manages the full lifecycle of task distribution between

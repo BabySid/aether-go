@@ -3,7 +3,7 @@ package internal
 import (
 	"testing"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 func TestResolveTemplateType(t *testing.T) {

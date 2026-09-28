@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	aether "github.com/BabySid/aether"
-	"github.com/BabySid/aether/broker"
-	"github.com/BabySid/aether/executor"
-	"github.com/BabySid/aether/model"
+	aether "github.com/BabySid/aether-go"
+	"github.com/BabySid/aether-go/broker"
+	"github.com/BabySid/aether-go/executor"
+	"github.com/BabySid/aether-go/model"
 )
 
 // testScheduler is a minimal cron.Scheduler for testing.

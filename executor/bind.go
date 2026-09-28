@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // OutputFrom converts an output struct to *model.ExecOutputs by reflecting its fields.

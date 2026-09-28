@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	aether "github.com/BabySid/aether"
-	"github.com/BabySid/aether/model"
+	aether "github.com/BabySid/aether-go"
+	"github.com/BabySid/aether-go/model"
 )
 
 // ReportData is passed to the HTML template.

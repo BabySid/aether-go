@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/BabySid/aether/broker"
-	"github.com/BabySid/aether/executor"
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/broker"
+	"github.com/BabySid/aether-go/executor"
+	"github.com/BabySid/aether-go/model"
 )
 
 // LocalWorker runs worker goroutines that pull tasks from the broker,

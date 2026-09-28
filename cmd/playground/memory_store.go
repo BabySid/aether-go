@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // SnapWorkflowRun is a JSON-serialisable view of a WorkflowRun at a point in time.

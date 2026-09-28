@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/BabySid/aether/vars"
+	"github.com/BabySid/aether-go/vars"
 )
 
 // ---------------------------------------------------------------------------

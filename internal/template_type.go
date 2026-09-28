@@ -1,6 +1,6 @@
 package internal
 
-import "github.com/BabySid/aether/model"
+import "github.com/BabySid/aether-go/model"
 
 // ResolveTemplateType determines the template type from its set fields.
 // Exactly one of DAG/Task/Loop must be set (enforced by Validate).

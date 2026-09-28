@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/idgen"
-	"github.com/BabySid/aether/internal"
-	"github.com/BabySid/aether/internal/binding"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/idgen"
+	"github.com/BabySid/aether-go/internal"
+	"github.com/BabySid/aether-go/internal/binding"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // createEligibleTasks finds DAG tasks whose dependencies are all satisfied and no

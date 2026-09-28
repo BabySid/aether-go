@@ -1,7 +1,7 @@
 // Package internal contains internal helper functions for the aether engine.
 package internal
 
-import "github.com/BabySid/aether/model"
+import "github.com/BabySid/aether-go/model"
 
 // FillDefaults applies default values to a Workflow.
 func FillDefaults(wf *model.Workflow) {

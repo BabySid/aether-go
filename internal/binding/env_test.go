@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
-	"github.com/BabySid/aether/vars"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
+	"github.com/BabySid/aether-go/vars"
 )
 
 func TestNewVarBuilder_Empty(t *testing.T) {

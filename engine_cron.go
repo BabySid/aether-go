@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/internal"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/internal"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // maxMissedSchedules is the upper bound on missed cron triggers. If more schedules

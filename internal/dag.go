@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/BabySid/aether/broker"
-	"github.com/BabySid/aether/expr"
-	ivars "github.com/BabySid/aether/internal/vars"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/broker"
+	"github.com/BabySid/aether-go/expr"
+	ivars "github.com/BabySid/aether-go/internal/vars"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // HasCycle detects cycles in a DAG using DFS.

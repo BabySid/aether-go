@@ -37,9 +37,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/BabySid/aether/expr"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/expr"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // ResolveRetryPolicy returns the retry policy for the given task node.

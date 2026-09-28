@@ -16,7 +16,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // ErrNotFound is returned when a worker is not found in the registry.

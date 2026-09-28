@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/BabySid/aether/broker"
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/expr"
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/broker"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/expr"
+	"github.com/BabySid/aether-go/model"
 )
 
 // CodeToPhase maps an ExecOutputs.Code to its canonical Phase.

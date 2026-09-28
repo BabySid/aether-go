@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // DynamicOutputs is a sentinel type for executors whose outputs are runtime-determined.

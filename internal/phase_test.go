@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/BabySid/aether/broker"
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/broker"
+	"github.com/BabySid/aether-go/model"
 )
 
 // mockEval is a configurable mock Evaluator.

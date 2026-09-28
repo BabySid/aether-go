@@ -3,9 +3,9 @@ package internal
 import (
 	"context"
 
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/hook"
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/hook"
+	"github.com/BabySid/aether-go/model"
 )
 
 // NotifyHook sends a hook event if the notifier is configured.

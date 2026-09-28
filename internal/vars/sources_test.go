@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	ivars "github.com/BabySid/aether/internal/vars"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	ivars "github.com/BabySid/aether-go/internal/vars"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // rawJSON marshals v into JSON bytes for use in test Parameters.

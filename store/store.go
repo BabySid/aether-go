@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // ErrNotFound indicates the requested resource does not exist.

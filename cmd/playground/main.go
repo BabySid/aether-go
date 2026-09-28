@@ -28,12 +28,12 @@ import (
 	"sync"
 	"time"
 
-	aether "github.com/BabySid/aether"
-	"github.com/BabySid/aether/broker"
-	"github.com/BabySid/aether/executor"
-	"github.com/BabySid/aether/internal"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/vars"
+	aether "github.com/BabySid/aether-go"
+	"github.com/BabySid/aether-go/broker"
+	"github.com/BabySid/aether-go/executor"
+	"github.com/BabySid/aether-go/internal"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/vars"
 )
 
 // DeploymentSource is a custom vars.Source that exposes deployment metadata

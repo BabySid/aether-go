@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // nameRe matches DNS-1123 label names as used throughout the schema:

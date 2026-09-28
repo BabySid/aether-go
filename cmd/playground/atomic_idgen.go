@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/BabySid/aether/idgen"
+	"github.com/BabySid/aether-go/idgen"
 )
 
 // AtomicIDGen generates monotonically increasing string IDs.

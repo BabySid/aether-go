@@ -7,10 +7,10 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/BabySid/aether/expr"
-	ivars "github.com/BabySid/aether/internal/vars"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/expr"
+	ivars "github.com/BabySid/aether-go/internal/vars"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // ExpandLoopIterations expands a loop definition into a list of iteration items.

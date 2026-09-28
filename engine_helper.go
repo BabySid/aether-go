@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/idgen"
-	"github.com/BabySid/aether/internal"
-	"github.com/BabySid/aether/internal/binding"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
-	"github.com/BabySid/aether/timeout"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/idgen"
+	"github.com/BabySid/aether-go/internal"
+	"github.com/BabySid/aether-go/internal/binding"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
+	"github.com/BabySid/aether-go/timeout"
 )
 
 // newVarBuilder returns an VarBuilder pre-seeded with all engine-level Sources.

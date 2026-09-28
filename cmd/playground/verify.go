@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"strings"
 
-	aether "github.com/BabySid/aether"
-	"github.com/BabySid/aether/model"
+	aether "github.com/BabySid/aether-go"
+	"github.com/BabySid/aether-go/model"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

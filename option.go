@@ -1,19 +1,19 @@
 package aether
 
 import (
-	"github.com/BabySid/aether/artifact"
-	"github.com/BabySid/aether/broker"
-	"github.com/BabySid/aether/cron"
-	"github.com/BabySid/aether/errsink"
-	"github.com/BabySid/aether/executor"
-	"github.com/BabySid/aether/expr"
-	"github.com/BabySid/aether/hook"
-	"github.com/BabySid/aether/idgen"
-	"github.com/BabySid/aether/secret"
-	"github.com/BabySid/aether/store"
-	"github.com/BabySid/aether/timeout"
-	"github.com/BabySid/aether/vars"
-	"github.com/BabySid/aether/worker"
+	"github.com/BabySid/aether-go/artifact"
+	"github.com/BabySid/aether-go/broker"
+	"github.com/BabySid/aether-go/cron"
+	"github.com/BabySid/aether-go/errsink"
+	"github.com/BabySid/aether-go/executor"
+	"github.com/BabySid/aether-go/expr"
+	"github.com/BabySid/aether-go/hook"
+	"github.com/BabySid/aether-go/idgen"
+	"github.com/BabySid/aether-go/secret"
+	"github.com/BabySid/aether-go/store"
+	"github.com/BabySid/aether-go/timeout"
+	"github.com/BabySid/aether-go/vars"
+	"github.com/BabySid/aether-go/worker"
 )
 
 // Option configures an Engine instance.

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // validWorkflow returns a minimal valid workflow for testing.

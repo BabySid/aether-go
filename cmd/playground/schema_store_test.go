@@ -5,9 +5,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/BabySid/aether/executor"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/executor"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 func makeSchema(execType string) model.ExecutorSchema {

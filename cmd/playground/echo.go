@@ -32,8 +32,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/BabySid/aether/executor"
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/executor"
+	"github.com/BabySid/aether-go/model"
 )
 
 // echoCapabilityType enumerates the supported output value types.

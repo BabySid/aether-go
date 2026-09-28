@@ -3,7 +3,7 @@ package aether
 import (
 	"time"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // WorkflowExecution is the read-only return type of Engine.Get.

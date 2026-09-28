@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 func TestParseDuration(t *testing.T) {

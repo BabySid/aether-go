@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/BabySid/aether/internal"
-	"github.com/BabySid/aether/internal/binding"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/internal"
+	"github.com/BabySid/aether-go/internal/binding"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // advanceScope is the core iterative scheduling function.

@@ -3,7 +3,7 @@ package internal
 import (
 	"encoding/json"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // MergeParameters merges src into dst; src keys win on conflict.

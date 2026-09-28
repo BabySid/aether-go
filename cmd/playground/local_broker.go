@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/BabySid/aether/broker"
-	"github.com/BabySid/aether/internal"
+	"github.com/BabySid/aether-go/broker"
+	"github.com/BabySid/aether-go/internal"
 )
 
 // LocalBroker routes tasks between the engine and local workers via a channel.

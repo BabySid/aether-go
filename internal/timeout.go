@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/BabySid/aether/model"
+	"github.com/BabySid/aether-go/model"
 )
 
 // durationRegex matches simple single-unit durations like "30s", "5m", "1h", "2d", "500ms".

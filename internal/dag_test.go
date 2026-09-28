@@ -6,9 +6,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/BabySid/aether/expr"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/expr"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // phasePtr is a test helper to take the address of a Phase value.

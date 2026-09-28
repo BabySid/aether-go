@@ -38,10 +38,10 @@
 package binding
 
 import (
-	ivars "github.com/BabySid/aether/internal/vars"
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
-	"github.com/BabySid/aether/vars"
+	ivars "github.com/BabySid/aether-go/internal/vars"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
+	"github.com/BabySid/aether-go/vars"
 )
 
 // EvalVars is a flat map of all variables available for expression evaluation

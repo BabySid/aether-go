@@ -3,8 +3,8 @@ package internal
 import (
 	"testing"
 
-	"github.com/BabySid/aether/model"
-	"github.com/BabySid/aether/store"
+	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/store"
 )
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
