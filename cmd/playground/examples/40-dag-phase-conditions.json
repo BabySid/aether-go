@@ -1,0 +1,81 @@
+{
+    "apiVersion": "aether/v1",
+    "kind": "Workflow",
+    "metadata": {
+        "name": "dag-phase-conditions",
+        "annotations": {
+            "description": "Both phaseConditions levels in one DAG: the verifier produces a rejection verdict, the flaky sibling's executor fails but its leaf-level phaseConditions flips it to Succeeded, and the DAG-level failed condition turns the all-success aggregate into Failed via the collected output.",
+            "test:expect-phase": "Failed",
+            "test:expect-task-count": "3",
+            "test:expect-task-phase": "main=Failed,verifier=Succeeded,flaky=Succeeded"
+        }
+    },
+    "spec": {
+        "entrypoint": "main",
+        "templates": [
+            {
+                "dag": {
+                    "name": "main",
+                    "outputs": {
+                        "parameters": [
+                            {
+                                "name": "verdict",
+                                "type": "string",
+                                "valueFrom": {"parameter": "tasks.verifier.outputs.parameters.verdict"}
+                            }
+                        ]
+                    },
+                    "phaseConditions": {
+                        "failed": "outputs.parameters.verdict == 'reject'"
+                    },
+                    "tasks": [
+                        {
+                            "name": "verifier",
+                            "template": "task-verdict"
+                        },
+                        {
+                            "name": "flaky",
+                            "template": "task-fail",
+                            "dependencies": ["verifier"]
+                        }
+                    ]
+                }
+            },
+            {
+                "task": {
+                    "name": "task-verdict",
+                    "inputs": {
+                        "parameters": [
+                            {
+                                "name": "outputs",
+                                "value": [
+                                    {"name": "verdict", "type": "string", "value": "reject"}
+                                ]
+                            }
+                        ]
+                    },
+                    "executor": {"type": "echo"},
+                    "outputs": {
+                        "parameters": [
+                            {"name": "verdict", "type": "string"}
+                        ]
+                    }
+                }
+            },
+            {
+                "task": {
+                    "name": "task-fail",
+                    "inputs": {
+                        "parameters": [
+                            {"name": "fail-count", "value": 1}
+                        ]
+                    },
+                    "executor": {"type": "echo"},
+                    "phaseConditions": {
+                        "succeeded": "true"
+                    }
+                }
+            }
+        ]
+    }
+}

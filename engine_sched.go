@@ -210,17 +210,18 @@ func (e *Engine) advanceScopeUntil(ctx context.Context, workflowRunID string, wf
 		// have no dependency graph, so continueOn has no aggregation semantics there.
 		// (If a loop body is itself a DAG with continueOn, its internal aggregation
 		// already produces the correct phase before the loop sees it.)
-		var phase model.Phase
+		var basePhase model.Phase
 		var msg string
+		var dagTmpl *model.Template
 		if parentTR.TemplateType == model.TemplateTypeDAG {
-			tmpl := internal.FindTemplate(wf, parentTR.TemplateName)
+			dagTmpl = internal.FindTemplate(wf, parentTR.TemplateName)
 			var dag *model.DAG
-			if tmpl != nil {
-				dag = tmpl.DAG
+			if dagTmpl != nil {
+				dag = dagTmpl.DAG
 			}
-			phase, msg = aggregatePhaseDAG(siblings, dag)
+			basePhase, msg = aggregatePhaseDAG(siblings, dag)
 		} else {
-			phase, msg = aggregatePhase(siblings)
+			basePhase, msg = aggregatePhase(siblings)
 		}
 		tr, err := e.store.GetTaskRun(ctx, parentTR.RunID)
 		if err != nil {
@@ -232,22 +233,27 @@ func (e *Engine) advanceScopeUntil(ctx context.Context, workflowRunID string, wf
 		}
 
 		// For DAG/Loop containers, collect container-level outputs so downstream tasks
-		// and the workflow itself can reference them via valueFrom.
+		// and the workflow itself can reference them via valueFrom. The collected output's
+		// Phase is filled in after the container phase override below, so a reader never
+		// sees a stale base phase.
 		var containerOutputs *model.Outputs
 		switch parentTR.TemplateType {
 		case model.TemplateTypeDAG:
 			// Resolve dag.outputs.parameters valueFrom references from children.
-			tmpl := internal.FindTemplate(wf, parentTR.TemplateName)
-			if tmpl != nil && tmpl.DAG != nil && tmpl.DAG.Outputs != nil {
+			if dagTmpl != nil && dagTmpl.DAG != nil && dagTmpl.DAG.Outputs != nil {
+				// This environment is for output collection only. It includes workflow
+				// arguments; the container phase-condition environment is built separately
+				// below and deliberately excludes them.
 				env := e.newVarBuilder().
 					WithWorkflowArgs(wf.Spec.Arguments).
 					WithSiblingTaskRuns(siblings).
 					Build()
 				collector := binding.NewCollector(e.exprEvaluator, e.errorSink)
-				collected, _ := collector.CollectDAGOutputs(ctx, tmpl.DAG.Outputs, siblings, env)
+				// CollectDAGOutputs reports per-parameter resolution errors to the
+				// ErrorSink itself and never fails the whole collection.
+				collected := collector.CollectDAGOutputs(ctx, dagTmpl.DAG.Outputs, siblings, env)
 				if collected != nil {
 					containerOutputs = &model.Outputs{
-						Phase:       phase,
 						ExecOutputs: model.ExecOutputs{Parameters: collected.Parameters},
 					}
 				}
@@ -270,11 +276,30 @@ func (e *Engine) advanceScopeUntil(ctx context.Context, workflowRunID string, wf
 				_, _, aggregated := internal.AggregateResults(results, tmpl.Loop.Aggregate, tmpl.Loop.Outputs)
 				if aggregated != nil {
 					containerOutputs = &model.Outputs{
-						Phase:       phase,
 						ExecOutputs: model.ExecOutputs{Parameters: aggregated.Parameters},
 					}
 				}
 			}
+		}
+
+		// Container phase override: aggregation produces the base phase first, then the
+		// author's phaseConditions gets a chance to override the verdict — including
+		// Succeeded → Failed. A cancelled aggregate is never evaluated, and that guard
+		// lives inside the entry point so no caller can bypass it.
+		//
+		// loop.phaseConditions is not implemented; only the DAG contract is wired here.
+		phase := basePhase
+		if parentTR.TemplateType == model.TemplateTypeDAG && dagTmpl != nil && dagTmpl.DAG != nil {
+			env := internal.BuildContainerPhaseEnv(basePhase, msg, siblings, containerOutputs)
+			phase = internal.EvalContainerPhaseConditions(ctx, dagTmpl.DAG.PhaseConditions, e.exprEvaluator, basePhase, env, &internal.EvalErrorContext{
+				Sink:          e.errorSink,
+				WorkflowRunID: workflowRunID,
+				TaskRunID:     tr.RunID,
+				Operation:     "evalContainerPhaseConditions",
+			})
+		}
+		if containerOutputs != nil {
+			containerOutputs.Phase = phase
 		}
 
 		containerMetrics := internal.ComputeMetricsFinish(tr.Metrics)

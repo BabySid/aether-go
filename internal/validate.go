@@ -172,6 +172,20 @@ func validateDAG(wf *model.Workflow, dag *model.DAG) error {
 		if task.Template != "" && FindTemplate(wf, task.Template) == nil {
 			return fmt.Errorf("task %q references unknown template %q", task.Name, task.Template)
 		}
+
+		// Template references use phaseConditions from the referenced template;
+		// call-site conditions are only supported for inline executors.
+		if task.Template != "" && task.PhaseConditions.IsValid() {
+			if taskTmpl := FindTemplate(wf, task.Template); taskTmpl != nil {
+				if taskTmpl.Task == nil {
+					kind := ResolveTemplateType(taskTmpl)
+					return fmt.Errorf("task %q: phaseConditions is not allowed when template %q resolves to a %s; declare phaseConditions on the %s template %q instead",
+						task.Name, task.Template, kind, kind, task.Template)
+				}
+				return fmt.Errorf("task %q: phaseConditions is not allowed on a task template call site; declare it on task template %q instead",
+					task.Name, task.Template)
+			}
+		}
 	}
 
 	// Validate entrypoints reference existing tasks.

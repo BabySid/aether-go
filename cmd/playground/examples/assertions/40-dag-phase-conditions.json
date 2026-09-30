@@ -1,0 +1,26 @@
+{
+  "expectPhase": "Failed",
+  "expectTaskCount": 3,
+  "expectTasks": [
+    {
+      "taskName": "main",
+      "expectPhase": "Failed",
+      "expectTemplateType": "dag",
+      "expectDepth": 0,
+      "expectOutputs": {
+        "verdict": "reject"
+      }
+    },
+    {
+      "taskName": "verifier",
+      "expectPhase": "Succeeded",
+      "expectOutputs": {
+        "verdict": "reject"
+      }
+    },
+    {
+      "taskName": "flaky",
+      "expectPhase": "Succeeded"
+    }
+  ]
+}
