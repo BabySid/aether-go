@@ -87,7 +87,6 @@ func newCronEngineBundle(t *testing.T) (*aether.Engine, *testScheduler, *MemoryS
 		aether.WithIDGenerator(NewAtomicIDGen()),
 		aether.WithExprEvaluator(NewSimpleEvaluator()),
 		aether.WithTaskBroker(brok),
-		aether.WithExecutorRegistry(reg),
 		aether.WithTimeoutWatcher(newPollingWatcher(memStore, 500*time.Millisecond)),
 		aether.WithCronScheduler(sched),
 	)
@@ -265,7 +264,6 @@ func TestCronWorkflow_ErrNotSupported(t *testing.T) {
 		aether.WithStore(memStore),
 		aether.WithIDGenerator(NewAtomicIDGen()),
 		aether.WithTaskBroker(brok),
-		aether.WithExecutorRegistry(reg),
 		aether.WithTimeoutWatcher(newPollingWatcher(memStore, 500*time.Millisecond)),
 	)
 	if err != nil {
