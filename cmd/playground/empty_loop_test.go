@@ -8,20 +8,20 @@ import (
 	"testing"
 
 	aether "github.com/BabySid/aether-go"
-	"github.com/BabySid/aether-go/broker"
 	"github.com/BabySid/aether-go/executor"
 	"github.com/BabySid/aether-go/hook"
 	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // controlledBroker exercises both inline callbacks and completion after Dispatch
 // returns, without timers or worker scheduling affecting the verdict.
 type controlledBroker struct {
 	*LocalBroker
-	dispatch func(context.Context, *broker.TaskAssignment) error
+	dispatch func(context.Context, *wire.TaskAssignment) error
 }
 
-func (b *controlledBroker) Dispatch(ctx context.Context, a *broker.TaskAssignment) error {
+func (b *controlledBroker) Dispatch(ctx context.Context, a *wire.TaskAssignment) error {
 	return b.dispatch(ctx, a)
 }
 
@@ -83,10 +83,10 @@ func runEmptyLoop(t *testing.T, wf *model.Workflow, assertion *WorkflowAssertion
 	ms := NewMemoryStore()
 	echo := newEcho()
 	var eng *aether.Engine
-	var queue []*broker.TaskAssignment
-	var lastResult *broker.TaskResult
+	var queue []*wire.TaskAssignment
+	var lastResult *wire.TaskResult
 	seen := map[string]int{}
-	execute := func(a *broker.TaskAssignment) {
+	execute := func(a *wire.TaskAssignment) {
 		state, err := eng.Get(ctx, a.WorkflowRunID)
 		if err != nil {
 			t.Fatal(err)
@@ -119,12 +119,12 @@ func runEmptyLoop(t *testing.T, wf *model.Workflow, assertion *WorkflowAssertion
 		if err != nil {
 			t.Fatal(err)
 		}
-		result := &broker.TaskResult{TaskRunID: a.TaskRunID, WorkflowRunID: a.WorkflowRunID, ExecOutputs: out}
+		result := &wire.TaskResult{TaskRunID: a.TaskRunID, WorkflowRunID: a.WorkflowRunID, ExecOutputs: out}
 		eng.OnTaskCompleted(ctx, result)
 		lastResult = result
 	}
 	b := &controlledBroker{LocalBroker: NewLocalBroker(nil, nil)}
-	b.dispatch = func(ctx context.Context, a *broker.TaskAssignment) error {
+	b.dispatch = func(ctx context.Context, a *wire.TaskAssignment) error {
 		if _, err := ms.GetTaskRun(ctx, a.TaskRunID); err != nil {
 			t.Fatalf("unpersisted run: %v", err)
 		}
@@ -201,9 +201,9 @@ func TestEmptyLoopCancellation(t *testing.T) {
 	}
 	ctx := context.Background()
 	ms := NewMemoryStore()
-	var pending *broker.TaskAssignment
+	var pending *wire.TaskAssignment
 	b := &controlledBroker{LocalBroker: NewLocalBroker(nil, nil)}
-	b.dispatch = func(_ context.Context, a *broker.TaskAssignment) error {
+	b.dispatch = func(_ context.Context, a *wire.TaskAssignment) error {
 		if pending != nil {
 			t.Fatal("unexpected extra dispatch")
 		}
@@ -226,7 +226,7 @@ func TestEmptyLoopCancellation(t *testing.T) {
 	}
 	// Late worker events must not revive a cancelled workflow or its parent DAG.
 	eng.OnTaskStarted(ctx, pending.TaskRunID)
-	eng.OnTaskCompleted(ctx, &broker.TaskResult{TaskRunID: pending.TaskRunID, WorkflowRunID: id, ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeSucceeded}})
+	eng.OnTaskCompleted(ctx, &wire.TaskResult{TaskRunID: pending.TaskRunID, WorkflowRunID: id, ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeSucceeded}})
 	state, err := eng.Get(ctx, id)
 	if err != nil {
 		t.Fatal(err)

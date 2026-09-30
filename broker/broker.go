@@ -12,7 +12,7 @@ package broker
 import (
 	"context"
 
-	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // TaskBroker manages the full lifecycle of task distribution between
@@ -23,8 +23,8 @@ type TaskBroker interface {
 	// Dispatch submits a task for execution.
 	// How and where the task runs is determined by the implementation:
 	//   - local: starts a goroutine and executes in-process
-	//   - distributed: enqueues to MQ / Redis / HTTP endpoint
-	Dispatch(ctx context.Context, assignment *TaskAssignment) error
+	//   - distributed: serializes the assignment and enqueues to MQ / Redis / HTTP
+	Dispatch(ctx context.Context, assignment *wire.TaskAssignment) error
 
 	// Cancel sends a cancellation signal to a running task.
 	// Implementation decides how to propagate (context cancel / remote signal).
@@ -36,7 +36,7 @@ type TaskBroker interface {
 	// workerID identifies the caller for affinity / logging.
 	// Returns (nil, context.DeadlineExceeded) or (nil, context.Canceled)
 	// when the context expires before a task becomes available.
-	FetchTask(ctx context.Context, workerID string) (*TaskAssignment, error)
+	FetchTask(ctx context.Context, workerID string) (*wire.TaskAssignment, error)
 
 	// StartTask reports that a worker has begun executing a task.
 	// Must be called before any actual computation starts so that the engine
@@ -50,8 +50,9 @@ type TaskBroker interface {
 	// Called by the worker after task execution finishes.
 	// The implementation decides how to deliver this result to the engine:
 	//   - local: directly invokes the CompletionHandler
-	//   - distributed: publishes to MQ, the consumer calls engine.OnTaskCompleted
-	CompleteTask(ctx context.Context, result *TaskResult) error
+	//   - distributed: serializes the result and publishes to MQ; the consumer
+	//     deserializes and calls engine.OnTaskCompleted
+	CompleteTask(ctx context.Context, result *wire.TaskResult) error
 
 	// --- Lifecycle ---
 
@@ -73,40 +74,8 @@ type StartHandler func(ctx context.Context, taskRunID string)
 // This type is NOT part of the TaskBroker interface contract.
 // It is a convenience type used by implementations (e.g., local broker)
 // that need a direct callback mechanism.
-type CompletionHandler func(ctx context.Context, result *TaskResult)
+type CompletionHandler func(ctx context.Context, result *wire.TaskResult)
 
-// TaskAssignment contains all information needed to execute a task.
-// "Fat assignment": workers do not need to query the Store.
-//
-// Inputs and Resources use strong types: they follow a fixed schema known to the
-// framework, and using *model.Inputs / *model.Resources eliminates manual
-// marshal/unmarshal in every broker implementation.
-type TaskAssignment struct {
-	TaskRunID     string
-	WorkflowRunID string
-	TaskName      string
-	TemplateName  string
-	ExecutorType  string           // executor type identifier, e.g. "echo", "http", "shell"
-	Inputs        *model.Inputs    // resolved task inputs (nil if none)
-	Timeout       string           // e.g. "30m"
-	Resources     *model.Resources // resource requirements (nil if none)
-	Priority      int
-	RetryCount    int // number of retries already consumed (0 = first attempt)
-}
-
-// TaskResult holds the result of a completed task execution.
-// It is the message a worker sends to the engine when a task finishes.
-//
-// Design principles:
-//   - WorkflowRunID mirrors TaskAssignment so the engine can locate the scope
-//     without an extra store lookup.
-//   - ExecOutputs.Code carries the execution outcome; the engine maps it to
-//     Phase (single Phase writer).
-//   - Phase and Metrics are NOT included: Phase is derived by the engine from
-//     Code; Metrics (StartedAt/FinishedAt/Retries) are recorded by the engine
-//     in OnTaskStarted / OnTaskCompleted.
-type TaskResult struct {
-	TaskRunID     string
-	WorkflowRunID string // mirrors TaskAssignment.WorkflowRunID; avoids extra store lookup
-	*model.ExecOutputs
-}
+// TaskAssignment and TaskResult are declared in package wire — they are the
+// engine↔worker wire contract, kept out of this behaviour-only port. See
+// wire.TaskAssignment and wire.TaskResult.

@@ -47,7 +47,7 @@ type Inputs struct {
 
 // ExecOutputs is the business data produced by an executor.
 // It is the single authoritative structure for executor return values,
-// shared across executor.Plugin, broker.TaskResult, and model.Outputs.
+// shared across executor.Plugin, wire.TaskResult, and model.Outputs.
 // Phase and Metrics are NOT included here; they are framework concerns filled
 // by the broker/engine layer, not by the executor itself.
 type ExecOutputs struct {

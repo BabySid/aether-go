@@ -24,6 +24,7 @@ import (
 	"github.com/BabySid/aether-go/store"
 	"github.com/BabySid/aether-go/timeout"
 	"github.com/BabySid/aether-go/vars"
+	"github.com/BabySid/aether-go/wire"
 	"github.com/BabySid/aether-go/worker"
 )
 
@@ -555,7 +556,7 @@ func (e *Engine) OnTaskStarted(ctx context.Context, taskRunID string) {
 // OnTaskCompleted is invoked when a task finishes execution.
 // It persists the result, fires task-level hooks, then re-evaluates the task's
 // scope to dispatch newly-unblocked tasks or finalize the workflow.
-func (e *Engine) OnTaskCompleted(ctx context.Context, result *broker.TaskResult) {
+func (e *Engine) OnTaskCompleted(ctx context.Context, result *wire.TaskResult) {
 	// 1. Get current task run state first to check idempotency.
 	tr, err := e.store.GetTaskRun(ctx, result.TaskRunID)
 	if err != nil {
@@ -835,7 +836,7 @@ func (e *Engine) OnTaskTimeout(ctx context.Context, taskRunID string) {
 	// Drive the existing completion path with a Timeout result.
 	// OnTaskCompleted handles Token-based optimistic locking, hooks, retry checks,
 	// and scope advancement — reusing it avoids duplicating that logic here.
-	e.OnTaskCompleted(ctx, &broker.TaskResult{
+	e.OnTaskCompleted(ctx, &wire.TaskResult{
 		TaskRunID:     taskRunID,
 		WorkflowRunID: tr.WorkflowRunID,
 		ExecOutputs: &model.ExecOutputs{

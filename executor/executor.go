@@ -23,7 +23,7 @@ type Plugin interface {
 
 // ExecuteRequest is the input to a Plugin.
 // It carries all information a plugin needs to execute the task and emit
-// structured logs. Timeout is forwarded from TaskAssignment so the plugin
+// structured logs. Timeout is forwarded from wire.TaskAssignment so the plugin
 // can respect the deadline independently of the context (e.g. pass it to
 // a subprocess or a remote API call).
 type ExecuteRequest struct {

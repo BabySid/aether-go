@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/BabySid/aether-go/broker"
 	"github.com/BabySid/aether-go/expr"
 	ivars "github.com/BabySid/aether-go/internal/vars"
 	"github.com/BabySid/aether-go/model"
 	"github.com/BabySid/aether-go/store"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // HasCycle detects cycles in a DAG using DFS.
@@ -286,7 +286,7 @@ func BuildTaskEnv(taskRuns []*store.TaskRun) map[string]any {
 //   - Parent is a Loop: iterations are dispatched directly without a DAG task node.
 //
 // When taskCall is nil, only definition-level defaults (timeout, resources) apply.
-func BuildTaskAssignment(workflowRunID string, tr *store.TaskRun, taskDecl *model.Task, taskCall *model.Task, wf *model.Workflow) (*broker.TaskAssignment, error) {
+func BuildTaskAssignment(workflowRunID string, tr *store.TaskRun, taskDecl *model.Task, taskCall *model.Task, wf *model.Workflow) (*wire.TaskAssignment, error) {
 	if taskDecl == nil {
 		return nil, fmt.Errorf("no task definition for task %q: cannot build assignment", tr.TaskName)
 	}
@@ -299,7 +299,7 @@ func BuildTaskAssignment(workflowRunID string, tr *store.TaskRun, taskDecl *mode
 	if tr.RetryCount != nil {
 		retryCount = *tr.RetryCount
 	}
-	assignment := &broker.TaskAssignment{
+	assignment := &wire.TaskAssignment{
 		TaskRunID:     tr.RunID,
 		WorkflowRunID: workflowRunID,
 		TaskName:      tr.TaskName,

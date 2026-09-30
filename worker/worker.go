@@ -14,9 +14,8 @@ package worker
 import (
 	"context"
 	"errors"
-	"time"
 
-	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // ErrNotFound is returned when a worker is not found in the registry.
@@ -35,20 +34,20 @@ type Registry interface {
 
 	// Get returns the info for a specific worker.
 	// Returns ErrNotFound if the worker is not registered.
-	Get(ctx context.Context, workerID string) (*Info, error)
+	Get(ctx context.Context, workerID string) (*wire.WorkerInfo, error)
 
 	// List returns all currently registered workers.
-	List(ctx context.Context) ([]*Info, error)
+	List(ctx context.Context) ([]*wire.WorkerInfo, error)
 
 	// ListByExecutorType returns workers that support the given executor type.
 	// Returns an empty slice (not an error) if no workers support the type.
-	ListByExecutorType(ctx context.Context, executorType string) ([]*Info, error)
+	ListByExecutorType(ctx context.Context, executorType string) ([]*wire.WorkerInfo, error)
 
 	// --- Worker side ---
 
 	// Register registers a worker with its capabilities.
 	// If a worker with the same ID already exists, its info is updated (re-registration).
-	Register(ctx context.Context, info *Info) error
+	Register(ctx context.Context, info *wire.WorkerInfo) error
 
 	// Unregister removes a worker from the registry.
 	// Returns ErrNotFound if the worker is not registered.
@@ -61,16 +60,5 @@ type Registry interface {
 	Heartbeat(ctx context.Context, workerID string, meta map[string]any) error
 }
 
-// Info describes a registered worker's identity and capabilities.
-//
-// When a worker registers, it declares which executor types it can handle
-// and provides the full ExecutorSchema for each type. This allows the master
-// to populate its schema registry without a separate round-trip, enabling
-// schema-aware validation even when executor plugins run on remote workers.
-type Info struct {
-	ID            string                 // unique worker instance id
-	ExecutorTypes []string               // executor types this worker can handle
-	Schemas       []model.ExecutorSchema // full schema for each executor type
-	Tags          map[string]string      // optional metadata labels (reserved for future routing)
-	RegisteredAt  time.Time              // when the worker first registered (set by the registry)
-}
+// WorkerInfo (the registration/heartbeat payload) is declared in package wire —
+// it is part of the engine↔worker wire contract. See wire.WorkerInfo.
