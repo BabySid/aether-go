@@ -317,7 +317,6 @@ func buildEngine(timeoutSec int, sched *immediateScheduler) (*aether.Engine, *Me
 		aether.WithIDGenerator(NewAtomicIDGen()),
 		aether.WithExprEvaluator(NewSimpleEvaluator()),
 		aether.WithTaskBroker(brok),
-		aether.WithExecutorRegistry(reg),
 		aether.WithTimeoutWatcher(newPollingWatcher(memStore, 500*time.Millisecond)),
 		aether.WithVarsSource(&vars.SystemSource{}),
 		aether.WithVarsSource(&DeploymentSource{

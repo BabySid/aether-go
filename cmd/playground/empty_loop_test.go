@@ -140,7 +140,7 @@ func runEmptyLoop(t *testing.T, wf *model.Workflow, assertion *WorkflowAssertion
 		return nil
 	}
 	var err error
-	eng, err = aether.New(aether.WithStore(ms), aether.WithIDGenerator(NewAtomicIDGen()), aether.WithExprEvaluator(NewSimpleEvaluator()), aether.WithTaskBroker(b), aether.WithExecutor(echo), aether.WithHookNotifier(events))
+	eng, err = aether.New(aether.WithStore(ms), aether.WithIDGenerator(NewAtomicIDGen()), aether.WithExprEvaluator(NewSimpleEvaluator()), aether.WithTaskBroker(b), aether.WithHookNotifier(events))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +210,7 @@ func TestEmptyLoopCancellation(t *testing.T) {
 		pending = a
 		return nil
 	}
-	eng, err := aether.New(aether.WithStore(ms), aether.WithIDGenerator(NewAtomicIDGen()), aether.WithExprEvaluator(NewSimpleEvaluator()), aether.WithTaskBroker(b), aether.WithExecutor(newEcho()))
+	eng, err := aether.New(aether.WithStore(ms), aether.WithIDGenerator(NewAtomicIDGen()), aether.WithExprEvaluator(NewSimpleEvaluator()), aether.WithTaskBroker(b))
 	if err != nil {
 		t.Fatal(err)
 	}
