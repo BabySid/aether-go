@@ -196,7 +196,7 @@ func isDependencySatisfied(depStatus model.Phase, depTaskCO, dagCO *model.Contin
 		return true
 	}
 
-	co := MergeContinueOn(depTaskCO, dagCO)
+	co := ResolveContinueOn(depTaskCO, dagCO)
 	if co == nil {
 		return false
 	}
@@ -213,10 +213,10 @@ func isDependencySatisfied(depStatus model.Phase, depTaskCO, dagCO *model.Contin
 	}
 }
 
-// MergeContinueOn returns the effective continueOn policy for a task.
+// ResolveContinueOn returns the effective continueOn policy for a task.
 // If the task declares its own continueOn, it is used as-is (full override).
 // Otherwise the DAG-level default is used as a fallback.
-func MergeContinueOn(taskCO, dagCO *model.ContinueOn) *model.ContinueOn {
+func ResolveContinueOn(taskCO, dagCO *model.ContinueOn) *model.ContinueOn {
 	if taskCO != nil {
 		return taskCO
 	}

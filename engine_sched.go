@@ -621,7 +621,7 @@ func aggregatePhaseDAG(taskRuns []*store.TaskRun, dag *model.DAG) (model.Phase, 
 			if node, ok := taskNodeByName[tr.TaskName]; ok {
 				taskCO = node.ContinueOn
 			}
-			co := internal.MergeContinueOn(taskCO, dag.ContinueOn)
+			co := internal.ResolveContinueOn(taskCO, dag.ContinueOn)
 			tolerated := false
 			if co != nil {
 				switch phase {
