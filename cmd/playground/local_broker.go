@@ -9,6 +9,7 @@ import (
 
 	"github.com/BabySid/aether-go/broker"
 	"github.com/BabySid/aether-go/internal"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // LocalBroker routes tasks between the engine and local workers via a channel.
@@ -18,7 +19,7 @@ type LocalBroker struct {
 
 	mu       sync.Mutex
 	closed   bool
-	taskCh   chan *broker.TaskAssignment
+	taskCh   chan *wire.TaskAssignment
 	taskCtxs map[string]context.Context    // taskRunID → execution context (with timeout)
 	cancels  map[string]context.CancelFunc // taskRunID → cancel func
 
@@ -30,7 +31,7 @@ func NewLocalBroker(startHandler broker.StartHandler, handler broker.CompletionH
 	return &LocalBroker{
 		startHandler: startHandler,
 		handler:      handler,
-		taskCh:       make(chan *broker.TaskAssignment, 64),
+		taskCh:       make(chan *wire.TaskAssignment, 64),
 		taskCtxs:     make(map[string]context.Context),
 		cancels:      make(map[string]context.CancelFunc),
 	}
@@ -41,7 +42,7 @@ func (b *LocalBroker) SetWorker(w *LocalWorker) {
 	b.worker = w
 }
 
-func (b *LocalBroker) Dispatch(ctx context.Context, assignment *broker.TaskAssignment) error {
+func (b *LocalBroker) Dispatch(ctx context.Context, assignment *wire.TaskAssignment) error {
 	taskCtx, cancel := context.WithCancel(ctx)
 	if assignment.Timeout != "" {
 		timeout, err := internal.ParseDuration(assignment.Timeout)
@@ -84,7 +85,7 @@ func (b *LocalBroker) Cancel(_ context.Context, taskRunID string) error {
 	return nil
 }
 
-func (b *LocalBroker) FetchTask(ctx context.Context, _ string) (*broker.TaskAssignment, error) {
+func (b *LocalBroker) FetchTask(ctx context.Context, _ string) (*wire.TaskAssignment, error) {
 	select {
 	case assignment, ok := <-b.taskCh:
 		if !ok {
@@ -118,7 +119,7 @@ func (b *LocalBroker) StartTask(ctx context.Context, taskRunID string, _ string)
 	return nil
 }
 
-func (b *LocalBroker) CompleteTask(ctx context.Context, result *broker.TaskResult) error {
+func (b *LocalBroker) CompleteTask(ctx context.Context, result *wire.TaskResult) error {
 	b.CleanupTask(result.TaskRunID)
 	if b.handler != nil {
 		b.handler(ctx, result)

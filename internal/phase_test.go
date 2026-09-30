@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/BabySid/aether-go/broker"
 	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // mockEval is a configurable mock Evaluator.
@@ -45,7 +45,7 @@ func TestCodeToPhase(t *testing.T) {
 // ---- EvalPhaseConditions ----
 
 func TestEvalPhaseConditions_NilConditions(t *testing.T) {
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeFailed, Message: "boom"},
 	}
 	phase := EvalPhaseConditions(context.Background(), nil, &mockEval{fn: func(string, map[string]any) (any, error) {
@@ -58,7 +58,7 @@ func TestEvalPhaseConditions_NilConditions(t *testing.T) {
 }
 
 func TestEvalPhaseConditions_NilEvaluator(t *testing.T) {
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeSucceeded},
 	}
 	conditions := &model.PhaseConditions{Failed: "true"}
@@ -69,7 +69,7 @@ func TestEvalPhaseConditions_NilEvaluator(t *testing.T) {
 }
 
 func TestEvalPhaseConditions_NilExecOutputs(t *testing.T) {
-	result := &broker.TaskResult{ExecOutputs: nil}
+	result := &wire.TaskResult{ExecOutputs: nil}
 	phase := EvalPhaseConditions(context.Background(), nil, nil, result, nil)
 	// code=0 → PhaseSucceeded
 	if phase != model.PhaseSucceeded {
@@ -79,7 +79,7 @@ func TestEvalPhaseConditions_NilExecOutputs(t *testing.T) {
 
 func TestEvalPhaseConditions_SucceededOverride(t *testing.T) {
 	eval := &mockEval{fn: func(string, map[string]any) (any, error) { return true, nil }}
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeFailed},
 	}
 	conditions := &model.PhaseConditions{Succeeded: "always-true"}
@@ -96,7 +96,7 @@ func TestEvalPhaseConditions_FailedOverride(t *testing.T) {
 		}
 		return false, nil
 	}}
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeSucceeded},
 	}
 	conditions := &model.PhaseConditions{Succeeded: "succ-cond", Failed: "fail-cond"}
@@ -114,7 +114,7 @@ func TestEvalPhaseConditions_ErrorOverride(t *testing.T) {
 		}
 		return false, nil
 	}}
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeSucceeded},
 	}
 	conditions := &model.PhaseConditions{Error: "err-cond"}
@@ -126,7 +126,7 @@ func TestEvalPhaseConditions_ErrorOverride(t *testing.T) {
 
 func TestEvalPhaseConditions_NoConditionMatch_FallsBackToBase(t *testing.T) {
 	eval := &mockEval{fn: func(string, map[string]any) (any, error) { return false, nil }}
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeTimeout},
 	}
 	conditions := &model.PhaseConditions{Succeeded: "x", Failed: "y", Error: "z"}
@@ -140,7 +140,7 @@ func TestEvalPhaseConditions_EvalError_TreatedAsFalse(t *testing.T) {
 	eval := &mockEval{fn: func(string, map[string]any) (any, error) {
 		return nil, errors.New("eval failed")
 	}}
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeFailed},
 	}
 	conditions := &model.PhaseConditions{Succeeded: "broken"}
@@ -154,7 +154,7 @@ func TestEvalPhaseConditions_EvalError_TreatedAsFalse(t *testing.T) {
 func TestEvalPhaseConditions_SucceededPriority(t *testing.T) {
 	// All conditions return true — succeeded has highest priority
 	eval := &mockEval{fn: func(string, map[string]any) (any, error) { return true, nil }}
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeError},
 	}
 	conditions := &model.PhaseConditions{Succeeded: "a", Failed: "b", Error: "c"}
@@ -178,7 +178,7 @@ func (e *captureEval) Eval(_ context.Context, _ string, env map[string]any) (any
 
 func TestEvalPhaseConditions_EnvContainsBaseFields(t *testing.T) {
 	eval := &captureEval{}
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{Code: model.ExecCodeFailed, Message: "timeout upstream"},
 	}
 	conditions := &model.PhaseConditions{Succeeded: "check"}
@@ -197,7 +197,7 @@ func TestEvalPhaseConditions_EnvContainsBaseFields(t *testing.T) {
 
 func TestEvalPhaseConditions_OutputParamTypes(t *testing.T) {
 	eval := &captureEval{}
-	result := &broker.TaskResult{
+	result := &wire.TaskResult{
 		ExecOutputs: &model.ExecOutputs{
 			Code:    0,
 			Message: "ok",

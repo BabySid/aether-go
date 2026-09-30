@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/BabySid/aether-go/broker"
 	"github.com/BabySid/aether-go/errsink"
 	"github.com/BabySid/aether-go/expr"
 	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // CodeToPhase maps an ExecOutputs.Code to its canonical Phase.
@@ -57,7 +57,7 @@ func EvalPhaseConditions(
 	ctx context.Context,
 	conditions *model.PhaseConditions,
 	eval expr.Evaluator,
-	result *broker.TaskResult,
+	result *wire.TaskResult,
 	errCtx *EvalErrorContext,
 ) model.Phase {
 	// Derive the base phase from Code (single source of truth).

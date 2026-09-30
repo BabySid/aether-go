@@ -7,9 +7,9 @@ import (
 	"time"
 
 	aether "github.com/BabySid/aether-go"
-	"github.com/BabySid/aether-go/broker"
 	"github.com/BabySid/aether-go/executor"
 	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // testScheduler is a minimal cron.Scheduler for testing.
@@ -74,7 +74,7 @@ func newCronEngineBundle(t *testing.T) (*aether.Engine, *testScheduler, *MemoryS
 		func(ctx context.Context, taskRunID string) {
 			eng.OnTaskStarted(ctx, taskRunID)
 		},
-		func(ctx context.Context, result *broker.TaskResult) {
+		func(ctx context.Context, result *wire.TaskResult) {
 			eng.OnTaskCompleted(ctx, result)
 		},
 	)
@@ -255,7 +255,7 @@ func TestCronWorkflow_ErrNotSupported(t *testing.T) {
 	var eng *aether.Engine
 	brok := NewLocalBroker(
 		func(ctx context.Context, taskRunID string) { eng.OnTaskStarted(ctx, taskRunID) },
-		func(ctx context.Context, result *broker.TaskResult) { eng.OnTaskCompleted(ctx, result) },
+		func(ctx context.Context, result *wire.TaskResult) { eng.OnTaskCompleted(ctx, result) },
 	)
 	w := NewLocalWorker("test-worker", brok, reg)
 	brok.SetWorker(w)

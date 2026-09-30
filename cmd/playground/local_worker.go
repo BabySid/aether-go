@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/BabySid/aether-go/broker"
 	"github.com/BabySid/aether-go/executor"
 	"github.com/BabySid/aether-go/model"
+	"github.com/BabySid/aether-go/wire"
 )
 
 // LocalWorker runs worker goroutines that pull tasks from the broker,
@@ -59,7 +59,7 @@ func (w *LocalWorker) run(ctx context.Context) {
 
 		_ = w.broker.StartTask(ctx, assignment.TaskRunID, w.id)
 
-		result := &broker.TaskResult{
+		result := &wire.TaskResult{
 			TaskRunID:     assignment.TaskRunID,
 			WorkflowRunID: assignment.WorkflowRunID,
 		}

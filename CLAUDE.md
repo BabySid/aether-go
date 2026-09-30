@@ -26,7 +26,7 @@ This separation means workers can run in-process, in separate goroutines, or on 
 
 ### 3. Fat Task Assignments — Workers Never Query the Store
 
-`broker.TaskAssignment` carries **everything** a worker needs to execute a task (inputs, secrets, artifacts, executor type, schema). Workers are fully self-contained and never need to call back into the `store.Store`. This eliminates a class of distributed coupling problems and makes workers simple, testable, and independently deployable.
+`wire.TaskAssignment` carries **everything** a worker needs to execute a task (inputs, secrets, artifacts, executor type, schema). Workers are fully self-contained and never need to call back into the `store.Store`. This eliminates a class of distributed coupling problems and makes workers simple, testable, and independently deployable.
 
 ### 4. Scope-Tree as Recursive Composition
 
@@ -117,7 +117,7 @@ No Makefile or external build tooling — standard `go` commands only.
 
 **Phase is engine-owned**: Executors return an `ExecCode` (integer). The engine maps codes to `Phase` values, optionally overridden by user-defined `PhaseConditions` expressions. `PhaseSkipped` and `PhaseCancelled` are set exclusively by the engine.
 
-**Fat task assignments**: `broker.TaskAssignment` carries all information needed to execute a task. Workers never query the Store directly.
+**Fat task assignments**: `wire.TaskAssignment` carries all information needed to execute a task. Workers never query the Store directly.
 
 **Declarative binding**: Parameter values flow via `{{inputs.parameters.name}}` interpolation. Tasks receive values only through explicitly wired `arguments` — no sideways access to sibling state.
 
@@ -128,6 +128,16 @@ No Makefile or external build tooling — standard `go` commands only.
 - `Phase` state machine: `Created → Ready → Running → (Succeeded|Failed|Error|Timeout|Skipped|Cancelled)`
 - Names follow DNS-1123 label rules (lowercase alphanumeric + hyphens, max 63 chars)
 - Maximum template nesting depth: 10 (configurable via `spec.maxNestedDepth`)
+- `model/` maps the **user-authored** Graph Workflow Protocol (`aether/v1`).
+
+### Wire Layer (`wire/`)
+
+The broker↔worker protocol (`aether/worker/v1`): the serialized messages exchanged at runtime. A separate protocol family from `model/` (callers never author these). The engine is not a wire endpoint — it hands Go values to its in-process broker, which serializes them.
+
+- `TaskAssignment`, `TaskResult`, `WorkerInfo` — camelCase JSON tags form the stable wire contract.
+- `broker/` and `worker/` are behaviour-only ports that reference these types, so the wire format lives in exactly one place.
+- No codec or envelope is provided: transports marshal with `encoding/json` (or their own format) and own any framing / version negotiation.
+- Change a field name only with a version bump (protocol name `aether/worker/v1` is documented in the package, not carried on the wire).
 
 ### Internal Helpers (`internal/`)
 
