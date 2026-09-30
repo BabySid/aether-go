@@ -37,14 +37,17 @@ func NewCollector(eval expr.Evaluator, sink errsink.ErrorSink) *Collector {
 //
 // Parameters that cannot be resolved are skipped (value left empty) rather than
 // failing the entire collection, because partial outputs are better than none.
+// Each skip is reported to the Collector's ErrorSink; the function itself never
+// fails, so it has no error return. It returns nil when no output could be
+// collected.
 func (c *Collector) CollectDAGOutputs(
 	ctx context.Context,
 	decls *model.Outputs,
 	children []*store.TaskRun,
 	env EvalVars,
-) (*model.Outputs, error) {
+) *model.Outputs {
 	if decls == nil || len(decls.Parameters) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	// Augment env with children if caller didn't already include them
@@ -83,7 +86,7 @@ func (c *Collector) CollectDAGOutputs(
 	}
 
 	if len(out.Parameters) == 0 {
-		return nil, nil
+		return nil
 	}
-	return out, nil
+	return out
 }

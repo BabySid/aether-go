@@ -260,6 +260,88 @@ func TestValidate_TaskTemplateNotFound(t *testing.T) {
 	assertContains(t, err.Error(), "references unknown template")
 }
 
+func TestValidate_TemplateCallSitePhaseConditionsRejected(t *testing.T) {
+	tests := []struct {
+		name    string
+		tmpl    model.Template
+		wantErr string
+	}{
+		{
+			name:    "task template call site",
+			tmpl:    model.Template{Task: &model.Task{Name: "inner", Executor: &model.Executor{Type: "echo"}}},
+			wantErr: `phaseConditions is not allowed on a task template call site`,
+		},
+		{
+			name:    "dag call site",
+			tmpl:    model.Template{DAG: &model.DAG{Name: "inner", Tasks: []model.Task{{Name: "leaf", Template: "exec-a"}}}},
+			wantErr: `phaseConditions is not allowed when template "inner" resolves to a dag`,
+		},
+		{
+			name:    "loop call site",
+			tmpl:    model.Template{Loop: &model.Loop{Name: "inner", Body: "exec-a", Items: []any{1}}},
+			wantErr: `phaseConditions is not allowed when template "inner" resolves to a loop`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := validWorkflow()
+			wf.Spec.Templates = append(wf.Spec.Templates, tt.tmpl)
+			wf.Spec.Templates[0].DAG.Tasks = []model.Task{{
+				Name:            "step1",
+				Template:        "inner",
+				PhaseConditions: &model.PhaseConditions{Failed: "true"},
+			}}
+			err := Validate(wf)
+			if err == nil {
+				t.Fatal("expected error for phaseConditions on a template call site")
+			}
+			assertContains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
+func TestValidate_TemplateCallSiteEmptyPhaseConditionsAccepted(t *testing.T) {
+	wf := validWorkflow()
+	wf.Spec.Templates = append(wf.Spec.Templates, model.Template{
+		Task: &model.Task{Name: "inner", Executor: &model.Executor{Type: "echo"}},
+	})
+	wf.Spec.Templates[0].DAG.Tasks = []model.Task{{
+		Name:            "step1",
+		Template:        "inner",
+		PhaseConditions: &model.PhaseConditions{},
+	}}
+	if err := Validate(wf); err != nil {
+		t.Fatalf("empty phaseConditions must be accepted, got %v", err)
+	}
+}
+
+func TestValidate_LeafPhaseConditionsAccepted(t *testing.T) {
+	wf := validWorkflow()
+	wf.Spec.Templates[0].DAG.Tasks = []model.Task{{
+		Name:            "step1",
+		Executor:        &model.Executor{Type: "echo"},
+		PhaseConditions: &model.PhaseConditions{Failed: "true"},
+	}}
+	if err := Validate(wf); err != nil {
+		t.Fatalf("leaf phaseConditions must be accepted, got %v", err)
+	}
+}
+
+func TestValidate_LoopTemplatePhaseConditionsUnvalidated(t *testing.T) {
+	wf := validWorkflow()
+	wf.Spec.Templates = append(wf.Spec.Templates, model.Template{
+		Loop: &model.Loop{
+			Name:            "loopy",
+			Body:            "exec-a",
+			Items:           []any{1},
+			PhaseConditions: &model.PhaseConditions{Failed: "true"},
+		},
+	})
+	if err := Validate(wf); err != nil {
+		t.Fatalf("loop.phaseConditions remains unvalidated, got %v", err)
+	}
+}
+
 func TestValidate_DependencyUnknownTask(t *testing.T) {
 	wf := validWorkflow()
 	wf.Spec.Templates[0].DAG.Tasks = []model.Task{

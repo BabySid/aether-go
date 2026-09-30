@@ -105,11 +105,19 @@ type ContinueOn struct {
 	Timeout bool `json:"timeout,omitempty"`
 }
 
-// PhaseConditions defines custom expressions to determine task phase.
+// PhaseConditions optionally overrides a task or DAG's resulting phase.
+// Conditions are checked in succeeded, failed, error order; no match or an
+// evaluation error preserves the phase derived from execution or aggregation.
 type PhaseConditions struct {
 	Succeeded string `json:"succeeded,omitempty"`
 	Failed    string `json:"failed,omitempty"`
 	Error     string `json:"error,omitempty"`
+}
+
+// IsValid reports whether at least one phase condition is set. A nil receiver or
+// an empty PhaseConditions object is invalid (a no-op).
+func (p *PhaseConditions) IsValid() bool {
+	return p != nil && (p.Succeeded != "" || p.Failed != "" || p.Error != "")
 }
 
 // ExecutorSchema is the self-description of an executor plugin.
