@@ -323,4 +323,3 @@ func TestRegistry_DuplicateRegister(t *testing.T) {
 		t.Error("expected error on duplicate register")
 	}
 }
-

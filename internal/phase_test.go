@@ -31,8 +31,8 @@ func TestCodeToPhase(t *testing.T) {
 		{model.ExecCodeFailed, model.PhaseFailed},
 		{model.ExecCodeError, model.PhaseError},
 		{model.ExecCodeTimeout, model.PhaseTimeout},
-		{999, model.PhaseError},  // unknown code → PhaseError
-		{-1, model.PhaseError},   // negative code → PhaseError
+		{999, model.PhaseError}, // unknown code → PhaseError
+		{-1, model.PhaseError},  // negative code → PhaseError
 	}
 	for _, tt := range tests {
 		got := CodeToPhase(tt.code)

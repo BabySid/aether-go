@@ -23,8 +23,8 @@ import (
 	"github.com/BabySid/aether-go/secret"
 	"github.com/BabySid/aether-go/store"
 	"github.com/BabySid/aether-go/timeout"
-	"github.com/BabySid/aether-go/worker"
 	"github.com/BabySid/aether-go/vars"
+	"github.com/BabySid/aether-go/worker"
 )
 
 // Engine is the core workflow scheduling engine.
@@ -38,8 +38,8 @@ type Engine struct {
 
 	// --- optional ---
 	exprEvaluator  expr.Evaluator
-	artifactStore   artifact.Repository // TODO: wire into task execution when artifact support is implemented
-	workerRegistry  worker.Registry     // optional: worker registration and discovery
+	artifactStore  artifact.Repository // TODO: wire into task execution when artifact support is implemented
+	workerRegistry worker.Registry     // optional: worker registration and discovery
 	secretStore    secret.Provider
 	hookNotifier   hook.Notifier
 	errorSink      errsink.ErrorSink

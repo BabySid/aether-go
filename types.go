@@ -18,8 +18,8 @@ type WorkflowExecution struct {
 	Outputs   *model.Outputs // workflow-level outputs, nil until finalized
 	Metrics   *model.Metrics // workflow-level timing metrics
 	CreatedAt time.Time
-	Progress  string           // "completed/total", empty when no tasks
-	Tasks     []TaskExecution  // all task runs, in creation order
+	Progress  string          // "completed/total", empty when no tasks
+	Tasks     []TaskExecution // all task runs, in creation order
 }
 
 // CronWorkflowExecution is the read-only return type of Engine.GetCronWorkflow.

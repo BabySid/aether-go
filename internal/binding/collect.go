@@ -87,4 +87,3 @@ func (c *Collector) CollectDAGOutputs(
 	}
 	return out, nil
 }
-

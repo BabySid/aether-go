@@ -110,4 +110,3 @@ func TestCollectDAGOutputs_StaticValue(t *testing.T) {
 		t.Fatalf("expected hello, got %s", v)
 	}
 }
-

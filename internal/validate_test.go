@@ -1262,8 +1262,8 @@ func TestValidateCronWorkflow_FiveFieldSchedule(t *testing.T) {
 		{"*/5 * * * *", true},
 		{"0 0 1 1 *", true},
 		{"0 9 * * 1-5", true},
-		{"0 * * *", false},       // 4 fields
-		{"0 * * * * *", false},   // 6 fields
+		{"0 * * *", false},     // 4 fields
+		{"0 * * * * *", false}, // 6 fields
 	}
 	for _, tt := range tests {
 		cw := validCronWorkflow()

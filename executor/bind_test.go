@@ -275,4 +275,3 @@ func TestSchemaOutputNamesMatchOutputFrom(t *testing.T) {
 		}
 	}
 }
-

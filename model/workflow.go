@@ -38,13 +38,12 @@ const (
 type CronWorkflowSpec struct {
 	Schedule                   string       `json:"schedule"`
 	Timezone                   string       `json:"timezone,omitempty"`
-	StartAt                    string       `json:"startAt,omitempty"`                    // optional RFC3339
-	EndAt                      string       `json:"endAt,omitempty"`                      // optional RFC3339
-	ConcurrencyPolicy          string       `json:"concurrencyPolicy,omitempty"`          // Allow, Forbid, Replace
-	StartingDeadlineSeconds    *int         `json:"startingDeadlineSeconds,omitempty"`    // nil = no deadline
+	StartAt                    string       `json:"startAt,omitempty"`                 // optional RFC3339
+	EndAt                      string       `json:"endAt,omitempty"`                   // optional RFC3339
+	ConcurrencyPolicy          string       `json:"concurrencyPolicy,omitempty"`       // Allow, Forbid, Replace
+	StartingDeadlineSeconds    *int         `json:"startingDeadlineSeconds,omitempty"` // nil = no deadline
 	SuccessfulJobsHistoryLimit int          `json:"successfulJobsHistoryLimit,omitempty"`
 	FailedJobsHistoryLimit     int          `json:"failedJobsHistoryLimit,omitempty"`
 	Suspend                    bool         `json:"suspend,omitempty"`
 	WorkflowSpec               WorkflowSpec `json:"workflowSpec"`
 }
-

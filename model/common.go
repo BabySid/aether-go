@@ -116,8 +116,8 @@ type PhaseConditions struct {
 // Best practice: use executor.SchemaOf[ConfigStruct, OutputStruct]() to derive this
 // from Go struct types; avoid hand-writing field names as strings.
 type ExecutorSchema struct {
-	Type        string `json:"type"`                  // matches Plugin.Type()
-	Version     string `json:"version"`               // schema version, e.g. "1.0"
+	Type        string `json:"type"`    // matches Plugin.Type()
+	Version     string `json:"version"` // schema version, e.g. "1.0"
 	Description string `json:"description,omitempty"`
 
 	// Inputs declares the accepted input parameters (derived from Config struct).

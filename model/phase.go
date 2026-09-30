@@ -35,7 +35,7 @@ const (
 	// PhaseReady means the engine has committed to execute this task.
 	// For leaf tasks: Broker.Dispatch() has been called.
 	// For containers: the first child leaf task has been dispatched.
-	PhaseReady   Phase = "Ready"
+	PhaseReady     Phase = "Ready"
 	PhaseRunning   Phase = "Running"
 	PhaseSuspended Phase = "Suspended"
 
