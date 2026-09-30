@@ -581,3 +581,36 @@ func TestEvalRepeatCondition_IterationIndexInEnv(t *testing.T) {
 		t.Errorf("expected loop_iter.index=5 in env, got %v", capturedEnv["loop_iter.index"])
 	}
 }
+
+func TestAggregateResults_EmptyStrategies(t *testing.T) {
+	declared := &model.Outputs{ExecOutputs: model.ExecOutputs{Parameters: []model.Parameter{{Name: "score"}}}}
+	for _, tc := range []struct {
+		name      string
+		aggregate *model.Aggregate
+		declared  *model.Outputs
+		want      string
+	}{
+		{"default", nil, declared, ""},
+		{"first", &model.Aggregate{Strategy: model.AggregateStrategyFirst}, declared, ""},
+		{"last", &model.Aggregate{Strategy: model.AggregateStrategyLast}, declared, ""},
+		{"list-filter", &model.Aggregate{Strategy: model.AggregateStrategyList, Parameters: []string{"selected", "selected"}}, declared, "selected"},
+		{"list-declared", &model.Aggregate{Strategy: model.AggregateStrategyList}, declared, "score"},
+		{"list-unknown", &model.Aggregate{Strategy: model.AggregateStrategyList}, nil, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			phase, _, out := AggregateResults(nil, tc.aggregate, tc.declared)
+			if phase != model.PhaseSucceeded {
+				t.Fatal(phase)
+			}
+			if tc.want == "" {
+				if out != nil {
+					t.Fatalf("want absent output, got %#v", out)
+				}
+				return
+			}
+			if out == nil || len(out.Parameters) != 1 || out.Parameters[0].Name != tc.want || string(out.Parameters[0].Value) != "[]" {
+				t.Fatalf("want %s=[], got %#v", tc.want, out)
+			}
+		})
+	}
+}

@@ -1,0 +1,17 @@
+{
+  "expectPhase": "Succeeded",
+  "expectTaskCount": 1,
+  "expectTasks": [
+    {
+      "taskName": "score-loop",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "loop",
+      "expectOutputs": {
+        "score": []
+      }
+    }
+  ],
+  "expectOutputs": {
+    "score": []
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "expectPhase": "Succeeded",
+  "expectTaskCount": 3,
+  "expectTasks": [
+    {
+      "taskName": "pipeline",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "dag"
+    },
+    {
+      "taskName": "batch",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "loop",
+      "expectOutputs": {
+        "score": []
+      }
+    },
+    {
+      "taskName": "summarize",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "task",
+      "expectInputs": {
+        "scores": []
+      }
+    }
+  ]
+}

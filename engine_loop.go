@@ -110,7 +110,10 @@ func (e *Engine) startLoopController(ctx context.Context, workflowRunID string, 
 	// Spawn the first iteration now; subsequent ones are launched in tryAdvanceRepeatLoop
 	// after each iteration completes.
 	if loop.RepeatCondition != "" {
-		return e.spawnRepeatIteration(ctx, workflowRunID, wf, loopTR, 0)
+		if err := e.spawnRepeatIteration(ctx, workflowRunID, wf, loopTR, 0); err != nil {
+			return err
+		}
+		return e.advanceScopeUntil(ctx, workflowRunID, wf, loopTR.RunID, &loopTR.ParentRunID)
 	}
 
 	// 2. Expand iterations.
@@ -151,16 +154,18 @@ func (e *Engine) startLoopController(ctx context.Context, workflowRunID string, 
 
 	// 3. Zero iterations: mark the loop as succeeded immediately.
 	// The loop is still Created at this point (never dispatched a leaf task),
-	// so we update it directly without a token guard — no concurrent writer can
-	// have transitioned it yet.
+	// so publish the terminal state and empty aggregation together under its token.
 	if len(iterations) == 0 {
 		succeeded := model.PhaseSucceeded
 		noIterMsg := "loop had no iterations"
+		_, _, outputs := internal.AggregateResults(nil, loop.Aggregate, loop.Outputs)
 		_, err = e.store.UpdateTaskRun(ctx, &store.TaskRun{
 			RunID:   loopTR.RunID,
 			Token:   loopTR.Token,
 			Status:  &succeeded,
 			Message: &noIterMsg,
+			Outputs: outputs,
+			Metrics: internal.ComputeMetricsFinish(loopTR.Metrics),
 		})
 		return err
 	}
@@ -181,10 +186,10 @@ func (e *Engine) startLoopController(ctx context.Context, workflowRunID string, 
 	}
 
 	// 5. Advance the loop's child scope to activate / dispatch the iteration TaskRuns.
-	return e.advanceScope(ctx, workflowRunID, wf, loopTR.RunID)
+	return e.advanceScopeUntil(ctx, workflowRunID, wf, loopTR.RunID, &loopTR.ParentRunID)
 }
 
-// spawnRepeatIteration creates and activates the body TaskRun for one iteration of a
+// spawnRepeatIteration creates the body TaskRun for one iteration of a
 // repeatCondition loop.
 //
 // Called in two places:
@@ -202,7 +207,7 @@ func (e *Engine) startLoopController(ctx context.Context, workflowRunID string, 
 // Iteration 0 is created by startLoopController. When it finishes:
 //   - tryAdvanceRepeatLoop builds env={loop_iter.index:0, tasks.check.phase:"Succeeded", ...}
 //   - evaluates "tasks.check.outputs.parameters.status != 'done'"
-//   - if true → calls spawnRepeatIteration(loopTR, 1) → creates iteration-1 TaskRun, advances scope
+//   - if true → calls spawnRepeatIteration(loopTR, 1) → creates iteration-1 TaskRun; caller advances scope
 //   - if false → returns advanced=false → advanceScope aggregates all children and finalizes loop
 //
 // All iteration TaskRuns share the same ParentRunID (loopTR.RunID), so ListTaskRunsByParent
@@ -241,7 +246,7 @@ func (e *Engine) spawnRepeatIteration(ctx context.Context, workflowRunID string,
 	if err := e.store.CreateTaskRun(ctx, iterRun); err != nil {
 		return fmt.Errorf("create repeat iteration %d: %w", iterIndex, err)
 	}
-	return e.advanceScope(ctx, workflowRunID, wf, loopTR.RunID)
+	return nil
 }
 
 // tryAdvanceRepeatLoop decides whether a repeatCondition loop should continue after
@@ -536,11 +541,5 @@ func (e *Engine) trySpawnNextIterations(ctx context.Context, workflowRunID strin
 		spawned = true
 	}
 
-	if spawned {
-		// Activate the freshly-created iterations (Created state).
-		if err := e.advanceScope(ctx, workflowRunID, wf, parentTR.RunID); err != nil {
-			return false, err
-		}
-	}
 	return spawned, nil
 }

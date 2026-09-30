@@ -1,0 +1,163 @@
+{
+  "apiVersion": "aether/v1",
+  "kind": "Workflow",
+  "metadata": {
+    "name": "empty-loop-minimal"
+  },
+  "spec": {
+    "entrypoint": "pipeline",
+    "templates": [
+      {
+        "dag": {
+          "name": "pipeline",
+          "tasks": [
+            {
+              "name": "batch",
+              "template": "score-loop"
+            }
+          ]
+        }
+      },
+      {
+        "loop": {
+          "name": "score-loop",
+          "concurrency": 3,
+          "body": "score-item",
+          "arguments": {
+            "parameters": [
+              {
+                "name": "item",
+                "value": "{{iterator.item}}"
+              },
+              {
+                "name": "outputs",
+                "value": [
+                  {
+                    "name": "score",
+                    "type": "int",
+                    "value": 95
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregate": {
+            "strategy": "list",
+            "parameters": [
+              "score"
+            ]
+          },
+          "outputs": {
+            "parameters": [
+              {
+                "name": "score",
+                "type": "array"
+              }
+            ]
+          },
+          "itemsFrom": "{{inputs.parameters.items}}",
+          "inputs": {
+            "parameters": [
+              {
+                "name": "items",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        }
+      },
+      {
+        "task": {
+          "name": "score-item",
+          "inputs": {
+            "parameters": [
+              {
+                "name": "item",
+                "type": "string"
+              },
+              {
+                "name": "outputs",
+                "type": "array"
+              }
+            ]
+          },
+          "executor": {
+            "type": "echo"
+          },
+          "outputs": {
+            "parameters": [
+              {
+                "name": "score",
+                "type": "int"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "task": {
+          "name": "collect",
+          "inputs": {
+            "parameters": [
+              {
+                "name": "scores",
+                "type": "array"
+              },
+              {
+                "name": "outputs",
+                "value": [
+                  {
+                    "name": "avg",
+                    "type": "int",
+                    "value": 95
+                  },
+                  {
+                    "name": "total",
+                    "type": "int",
+                    "value": 3
+                  },
+                  {
+                    "name": "ok",
+                    "type": "bool",
+                    "value": true
+                  }
+                ]
+              }
+            ]
+          },
+          "executor": {
+            "type": "echo"
+          },
+          "outputs": {
+            "parameters": [
+              {
+                "name": "avg",
+                "type": "int"
+              },
+              {
+                "name": "total",
+                "type": "int"
+              },
+              {
+                "name": "ok",
+                "type": "bool"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "hooks": {
+      "onStart": {
+        "template": "score-item"
+      },
+      "onSuccess": {
+        "template": "score-item"
+      },
+      "onExit": {
+        "template": "score-item"
+      }
+    }
+  }
+}

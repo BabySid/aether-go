@@ -52,9 +52,19 @@ import (
 // Once all iterations are terminal, results are aggregated into "process-files"
 // and advanceScope walks up to parentRunID=0 to finalize the workflow.
 func (e *Engine) advanceScope(ctx context.Context, workflowRunID string, wf *model.Workflow, startParentRunID string) error {
+	return e.advanceScopeUntil(ctx, workflowRunID, wf, startParentRunID, nil)
+}
+
+// advanceScopeUntil stops before entering stopParentRunID. Synchronous container
+// activation uses this boundary to return control to the caller's scope. Event
+// callbacks use no boundary and may advance all the way to the workflow root.
+func (e *Engine) advanceScopeUntil(ctx context.Context, workflowRunID string, wf *model.Workflow, startParentRunID string, stopParentRunID *string) error {
 	parentRunID := startParentRunID
 
 	for {
+		if stopParentRunID != nil && parentRunID == *stopParentRunID {
+			return nil
+		}
 		// Fast exit: if the context has been cancelled (e.g. engine shutdown),
 		// stop walking the scope tree immediately.
 		select {
@@ -80,20 +90,8 @@ func (e *Engine) advanceScope(ctx context.Context, workflowRunID string, wf *mod
 			}
 		}
 
-		// 3. If this scope is owned by a DAG container, check whether more tasks are
-		// now ready (i.e., all their declared dependencies are terminal).
-		// Skipped for parentRunID="" (root scope) because the root has no DAG.
-		//
-		// Example — DAG "main": fetch → notify → alert
-		//   advanceScope is called after "fetch" completes (Succeeded).
-		//   At step 2, siblings=[fetch:Succeeded], no Created tasks to activate.
-		//   Step 3 calls createEligibleTasks:
-		//     - "notify" depends on "fetch" → fetch is terminal → notify is eligible → CreateTaskRun(notify,Created)
-		//     - "alert"  depends on "notify" → notify not yet terminal → not eligible yet
-		//   After step 3: siblings=[fetch:Succeeded] (stale — notify was just added to the store)
-		// 3. Fetch the parent container once (if this is a non-root scope) so that
-		// createEligibleTasks can skip its own GetTaskRun, and Step 6 can reuse the same
-		// value without a second round-trip to the store.
+		// 3. Discover the next DAG batch using post-activation state. Newly
+		// persisted records are activated on the next pass through this scope.
 		var currentParentTR *store.TaskRun
 		if parentRunID != "" {
 			var fetchErr error
@@ -101,18 +99,26 @@ func (e *Engine) advanceScope(ctx context.Context, workflowRunID string, wf *mod
 			if fetchErr != nil {
 				return fetchErr
 			}
-			if err := e.createEligibleTasks(ctx, workflowRunID, wf, currentParentTR, siblings); err != nil {
+			if currentParentTR.Status != nil && currentParentTR.Status.IsTerminal() {
+				parentRunID = currentParentTR.ParentRunID
+				continue
+			}
+			// Activation may have completed children synchronously. Discover new
+			// dependencies from fresh state, never from the pre-activation snapshot.
+			siblings, err = e.store.ListTaskRunsByParent(ctx, workflowRunID, parentRunID)
+			if err != nil {
 				return err
+			}
+			created, err := e.createEligibleTasks(ctx, workflowRunID, wf, currentParentTR, siblings)
+			if err != nil {
+				return err
+			}
+			if created {
+				continue
 			}
 		}
 
-		// 4. Re-read siblings after createEligibleTasks, which may have added new TaskRuns
-		// (newly eligible tasks) or changed statuses (skipped tasks).
-		//
-		// Continuing the example above:
-		//   Before re-read: siblings=[fetch:Succeeded]           ← stale, misses "notify"
-		//   After  re-read: siblings=[fetch:Succeeded, notify:Created]  ← fresh
-		//   The loop's next iteration (step 2) will then activate notify:Created → dispatch it.
+		// 4. Refresh once more before deciding whether this scope is complete.
 		siblings, err = e.store.ListTaskRunsByParent(ctx, workflowRunID, parentRunID)
 		if err != nil {
 			return err
@@ -160,7 +166,7 @@ func (e *Engine) advanceScope(ctx context.Context, workflowRunID string, wf *mod
 				return err
 			}
 			if spawned {
-				return nil
+				continue
 			}
 
 			// If any iteration is still running, the loop scope is still in progress.
@@ -175,18 +181,24 @@ func (e *Engine) advanceScope(ctx context.Context, workflowRunID string, wf *mod
 				return err
 			}
 			if advanced {
-				return nil
+				continue
 			}
 		} else {
-			// DAG scope: simply wait for all tasks to finish.
 			if !allTerminal(siblings) {
 				return nil
+			}
+			// A completion may have arrived between discovery and this snapshot.
+			// Exhaust the reachable graph before aggregating. Failed dependencies
+			// without continueOn remain blocked and contribute the failure below.
+			tmpl := internal.FindTemplate(wf, parentTR.TemplateName)
+			if tmpl != nil && tmpl.DAG != nil && len(internal.FindReadyTasks(tmpl.DAG, siblings)) > 0 {
+				continue
 			}
 		}
 
 		// 7. All children are terminal and no further iterations will be spawned.
 		// Aggregate children's results into the parent container's phase and walk up.
-		// Use Get + UpdateTaskRun(Running → terminal) guarded by Token to prevent
+		// Use Get + UpdateTaskRun(Created/Running → terminal) guarded by Token to prevent
 		// concurrent advanceScope calls from double-finalizing the container.
 		//
 		// For DAG containers, aggregation is continueOn-aware: child tasks that
@@ -214,8 +226,8 @@ func (e *Engine) advanceScope(ctx context.Context, workflowRunID string, wf *mod
 		if err != nil {
 			return err
 		}
-		// Guard: only finalize if still Running (another advanceScope may have already done it).
-		if tr.Status == nil || *tr.Status != model.PhaseRunning {
+		// Only Created (no leaf execution) or Running containers may finalize.
+		if tr.Status == nil || (*tr.Status != model.PhaseRunning && *tr.Status != model.PhaseCreated) {
 			return nil
 		}
 
@@ -255,7 +267,7 @@ func (e *Engine) advanceScope(ctx context.Context, workflowRunID string, wf *mod
 					}
 					results = append(results, r)
 				}
-				_, _, aggregated := internal.AggregateResults(results, tmpl.Loop.Aggregate)
+				_, _, aggregated := internal.AggregateResults(results, tmpl.Loop.Aggregate, tmpl.Loop.Outputs)
 				if aggregated != nil {
 					containerOutputs = &model.Outputs{
 						Phase:       phase,
@@ -303,6 +315,14 @@ func (e *Engine) advanceScope(ctx context.Context, workflowRunID string, wf *mod
 //     The controller is responsible for expanding items / evaluating repeatCondition
 //     and spawning iteration TaskRuns.
 func (e *Engine) activateTaskRun(ctx context.Context, workflowRunID string, wf *model.Workflow, tr *store.TaskRun) error {
+	current, err := e.store.GetTaskRun(ctx, tr.RunID)
+	if err != nil {
+		return err
+	}
+	tr = current
+	if tr.Status == nil || *tr.Status != model.PhaseCreated {
+		return nil
+	}
 	switch tr.TemplateType {
 	case model.TemplateTypeDAG:
 		// Resolve call-site arguments into DAG inputs before entering the scope, so that
@@ -327,7 +347,7 @@ func (e *Engine) activateTaskRun(ctx context.Context, workflowRunID string, wf *
 		// not a terminal state per Phase.IsTerminal().
 		//
 		// tr.RunID becomes the startParentRunID for the child scope.
-		return e.advanceScope(ctx, workflowRunID, wf, tr.RunID)
+		return e.advanceScopeUntil(ctx, workflowRunID, wf, tr.RunID, &tr.ParentRunID)
 
 	case model.TemplateTypeTask:
 		// Leaf task: build a TaskAssignment (executor + resolved inputs) and hand off
@@ -480,12 +500,12 @@ func (e *Engine) markAncestorsRunning(ctx context.Context, workflowRunID string,
 
 // finalizeWorkflow marks the workflow as complete based on top-level TaskRun results.
 //
-// Uses Get + UpdateWorkflowRun(Running → terminal) guarded by Token to prevent
+// Uses Get + UpdateWorkflowRun(Created/Running → terminal) guarded by Token to prevent
 // double-finalization: in a local synchronous broker, Dispatch calls OnTaskCompleted
 // inline, which calls advanceScope and may reach finalizeWorkflow before the outer
 // advanceScope call returns. The Token ensures that only the first finalization
 // succeeds and fires workflow-level hooks; subsequent calls are no-ops because
-// the WorkflowRun is no longer Running.
+// the WorkflowRun is already terminal.
 func (e *Engine) finalizeWorkflow(ctx context.Context, workflowRunID string, topLevelRuns []*store.TaskRun, wf *model.Workflow) {
 	phase, msg := aggregatePhase(topLevelRuns)
 
@@ -493,8 +513,8 @@ func (e *Engine) finalizeWorkflow(ctx context.Context, workflowRunID string, top
 	if err != nil {
 		return
 	}
-	// Guard: only finalize if still Running.
-	if wfRun.Status == nil || *wfRun.Status != model.PhaseRunning {
+	// Zero-execution workflows can finish directly from Created.
+	if wfRun.Status == nil || (*wfRun.Status != model.PhaseRunning && *wfRun.Status != model.PhaseCreated) {
 		return
 	}
 	// Compute FinishedAt/Duration from the StartedAt recorded at workflow start.

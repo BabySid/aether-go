@@ -1,0 +1,37 @@
+{
+  "expectPhase": "Succeeded",
+  "expectTaskCount": 5,
+  "expectTasks": [
+    {
+      "taskName": "pipeline",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "dag"
+    },
+    {
+      "taskName": "produce",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "task"
+    },
+    {
+      "taskName": "loop-a",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "loop",
+      "expectOutputs": {
+        "score": []
+      }
+    },
+    {
+      "taskName": "loop-b",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "loop",
+      "expectOutputs": {
+        "score": []
+      }
+    },
+    {
+      "taskName": "summarize",
+      "expectPhase": "Succeeded",
+      "expectTemplateType": "task"
+    }
+  ]
+}

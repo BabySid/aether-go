@@ -1,0 +1,205 @@
+{
+  "apiVersion": "aether/v1",
+  "kind": "Workflow",
+  "metadata": {
+    "name": "empty-loop-refill"
+  },
+  "spec": {
+    "entrypoint": "pipeline",
+    "templates": [
+      {
+        "dag": {
+          "name": "pipeline",
+          "tasks": [
+            {
+              "name": "produce",
+              "template": "collect"
+            },
+            {
+              "name": "loop-a",
+              "template": "outer",
+              "dependencies": [
+                "produce"
+              ]
+            },
+            {
+              "name": "loop-b",
+              "template": "outer",
+              "dependencies": [
+                "produce"
+              ]
+            },
+            {
+              "name": "summarize",
+              "template": "collect",
+              "dependencies": [
+                "loop-a",
+                "loop-b"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "loop": {
+          "name": "score-loop",
+          "concurrency": 3,
+          "body": "score-item",
+          "arguments": {
+            "parameters": [
+              {
+                "name": "item",
+                "value": "{{iterator.item}}"
+              },
+              {
+                "name": "outputs",
+                "value": [
+                  {
+                    "name": "score",
+                    "type": "int",
+                    "value": 95
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregate": {
+            "strategy": "list",
+            "parameters": [
+              "score"
+            ]
+          },
+          "outputs": {
+            "parameters": [
+              {
+                "name": "score",
+                "type": "array"
+              }
+            ]
+          },
+          "itemsFrom": "{{inputs.parameters.items}}",
+          "inputs": {
+            "parameters": [
+              {
+                "name": "items",
+                "type": "array",
+                "value": []
+              }
+            ]
+          }
+        }
+      },
+      {
+        "task": {
+          "name": "score-item",
+          "inputs": {
+            "parameters": [
+              {
+                "name": "item",
+                "type": "string"
+              },
+              {
+                "name": "outputs",
+                "type": "array"
+              }
+            ]
+          },
+          "executor": {
+            "type": "echo"
+          },
+          "outputs": {
+            "parameters": [
+              {
+                "name": "score",
+                "type": "int"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "task": {
+          "name": "collect",
+          "inputs": {
+            "parameters": [
+              {
+                "name": "outputs",
+                "value": [
+                  {
+                    "name": "avg",
+                    "type": "int",
+                    "value": 95
+                  },
+                  {
+                    "name": "total",
+                    "type": "int",
+                    "value": 3
+                  },
+                  {
+                    "name": "ok",
+                    "type": "bool",
+                    "value": true
+                  }
+                ]
+              }
+            ]
+          },
+          "executor": {
+            "type": "echo"
+          },
+          "outputs": {
+            "parameters": [
+              {
+                "name": "avg",
+                "type": "int"
+              },
+              {
+                "name": "total",
+                "type": "int"
+              },
+              {
+                "name": "ok",
+                "type": "bool"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "dag": {
+          "name": "wrapper",
+          "tasks": [
+            {
+              "name": "inner",
+              "template": "score-loop"
+            }
+          ]
+        }
+      },
+      {
+        "loop": {
+          "name": "outer",
+          "body": "wrapper",
+          "items": [
+            1,
+            2,
+            3
+          ],
+          "concurrency": 2
+        }
+      }
+    ],
+    "maxNestedDepth": 10,
+    "hooks": {
+      "onStart": {
+        "template": "score-item"
+      },
+      "onSuccess": {
+        "template": "score-item"
+      },
+      "onExit": {
+        "template": "score-item"
+      }
+    }
+  }
+}

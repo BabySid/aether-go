@@ -13,150 +13,103 @@ import (
 	"github.com/BabySid/aether-go/store"
 )
 
-// createEligibleTasks finds DAG tasks whose dependencies are all satisfied and no
-// TaskRun exists yet, then creates TaskRuns (in PhaseCreated) for them so
-// advanceScope can activate them in the next iteration.
-//
-// The function loops instead of recursing: when tasks are skipped (their "when"
-// condition evaluated to false), the loop refreshes siblings and re-evaluates
-// readiness in the next iteration. This avoids unbounded recursion for DAGs with
-// many skip-chains while keeping the eager-unblocking behavior.
-//
-// # When-condition evaluation
-//
-// Each ready task is evaluated against its "when" expression using sibling
-// TaskRun outputs as the expression context:
-//
-//	task "notify":
-//	  when: "{{tasks.review.outputs.parameters.decision}} == 'approve'"
-//	  template: "send-approval"
-//
-// If the expression evaluates to false (or evaluation errors), the task is
-// Skipped immediately (a Skipped TaskRun is persisted so downstream tasks
-// can still proceed).
-//
-// # Why loop after skipping
-//
-// A skipped task is terminal. Its dependents may now be unblocked:
-//
-//	A ──► B (when: ..., skipped)
-//	           └──► C (depends on B)
-//
-// After B is skipped, C's dependency on B is satisfied. The loop refreshes
-// siblings and re-evaluates so C gets created without waiting for the next
-// external event.
-func (e *Engine) createEligibleTasks(ctx context.Context, workflowRunID string, wf *model.Workflow, parentTR *store.TaskRun, siblings []*store.TaskRun) error {
+// createEligibleTasks persists one batch of ready DAG tasks. Activation is owned
+// by the scope scheduler, which reloads the actual persisted records first.
+func (e *Engine) createEligibleTasks(ctx context.Context, workflowRunID string, wf *model.Workflow, parentTR *store.TaskRun, siblings []*store.TaskRun) (bool, error) {
 	// parentTR is passed in by the caller (advanceScope already has it); no extra GetTaskRun needed.
 	parentRunID := parentTR.RunID
 	tmpl := internal.FindTemplate(wf, parentTR.TemplateName)
 	if tmpl == nil || tmpl.DAG == nil {
 		// Parent is not a DAG (e.g., a Loop scope is handled elsewhere).
-		return nil
+		return false, nil
 	}
 
-	for {
-		// FindReadyTasks returns DAG tasks whose every dependency has a terminal
-		// TaskRun in siblings, and which have no TaskRun of their own yet.
-		readyTasks := internal.FindReadyTasks(tmpl.DAG, siblings)
-		if len(readyTasks) == 0 {
-			return nil
-		}
+	// FindReadyTasks returns DAG tasks whose every dependency has a terminal
+	// TaskRun in siblings, and which have no TaskRun of their own yet.
+	readyTasks := internal.FindReadyTasks(tmpl.DAG, siblings)
+	if len(readyTasks) == 0 {
+		return false, nil
+	}
 
-		// Evaluate "when" conditions and partition into execute vs skip.
-		// siblings provides the expression evaluation context (sibling outputs).
-		var toExecute []model.Task
-		var toSkip []model.Task
-		for _, task := range readyTasks {
-			if task.When == "" {
-				toExecute = append(toExecute, task)
-				continue
-			}
-			shouldRun, err := internal.EvalWhenCondition(ctx, task.When, e.exprEvaluator, siblings)
-			if err != nil {
-				// Treat evaluation errors as "skip" to avoid blocking the DAG.
-				e.reportError(ctx, err, errsink.ErrorContext{
-					WorkflowRunID: workflowRunID, TaskRunID: parentTR.RunID,
-					Operation: "createEligibleTasks.whenCondition", Severity: errsink.SeverityWarning,
-				})
-				toSkip = append(toSkip, task)
-				continue
-			}
-			if shouldRun {
-				toExecute = append(toExecute, task)
-			} else {
-				toSkip = append(toSkip, task)
-			}
+	// Evaluate "when" conditions and partition into execute vs skip.
+	// siblings provides the expression evaluation context (sibling outputs).
+	var toExecute []model.Task
+	var toSkip []model.Task
+	for _, task := range readyTasks {
+		if task.When == "" {
+			toExecute = append(toExecute, task)
+			continue
 		}
-
-		// Persist Skipped TaskRuns immediately (they count as terminal for downstream deps).
-		for _, task := range toSkip {
-			templateType := resolveTaskTemplateType(wf, &task)
-			skippedPhase := model.PhaseSkipped
-			skipMsg := fmt.Sprintf("when condition %q evaluated to false", task.When)
-			skippedRun := &store.TaskRun{
-				RunID: e.idGen.Generate(idgen.Context{
-					WorkflowRunID: workflowRunID,
-					WorkflowKind:  wf.Kind,
-					TaskName:      task.Name,
-					TemplateName:  task.Template,
-				}),
-				WorkflowRunID: workflowRunID,
-				ParentRunID:   parentRunID,
-				Depth:         parentTR.Depth + 1,
-				Scope:         parentTR.TaskName + "/",
-				TaskName:      task.Name,
-				TemplateName:  task.Template,
-				TemplateType:  templateType,
-				Status:        &skippedPhase,
-				Message:       &skipMsg,
-			}
-			if err := e.store.CreateTaskRun(ctx, skippedRun); err != nil {
-				return err
-			}
+		shouldRun, err := internal.EvalWhenCondition(ctx, task.When, e.exprEvaluator, siblings)
+		if err != nil {
+			// Treat evaluation errors as "skip" to avoid blocking the DAG.
+			e.reportError(ctx, err, errsink.ErrorContext{
+				WorkflowRunID: workflowRunID, TaskRunID: parentTR.RunID,
+				Operation: "createEligibleTasks.whenCondition", Severity: errsink.SeverityWarning,
+			})
+			toSkip = append(toSkip, task)
+			continue
 		}
-
-		// Create Created TaskRuns for tasks that should execute, then activate immediately.
-		for _, task := range toExecute {
-			templateType := resolveTaskTemplateType(wf, &task)
-			pendingPhase := model.PhaseCreated
-			newRun := &store.TaskRun{
-				RunID: e.idGen.Generate(idgen.Context{
-					WorkflowRunID: workflowRunID,
-					WorkflowKind:  wf.Kind,
-					TaskName:      task.Name,
-					TemplateName:  task.Template,
-				}),
-				WorkflowRunID: workflowRunID,
-				ParentRunID:   parentRunID,
-				Depth:         parentTR.Depth + 1,
-				Scope:         parentTR.TaskName + "/",
-				TaskName:      task.Name,
-				TemplateName:  task.Template,
-				TemplateType:  templateType,
-				Status:        &pendingPhase,
-			}
-			if err := e.store.CreateTaskRun(ctx, newRun); err != nil {
-				return err
-			}
-			// Activate synchronously: containers enter Running + recurse; leaf tasks dispatch.
-			if err := e.activateTaskRun(ctx, workflowRunID, wf, newRun); err != nil {
-				return err
-			}
-		}
-
-		// If no tasks were skipped in this round, downstream deps cannot have changed.
-		if len(toSkip) == 0 {
-			return nil
-		}
-
-		// Some tasks were skipped — their dependents may be newly ready.
-		// Refresh siblings (which now include the freshly-skipped TaskRuns) and loop.
-		var sibErr error
-		siblings, sibErr = e.store.ListTaskRunsByParent(ctx, workflowRunID, parentRunID)
-		if sibErr != nil {
-			return sibErr
+		if shouldRun {
+			toExecute = append(toExecute, task)
+		} else {
+			toSkip = append(toSkip, task)
 		}
 	}
+
+	// Persist Skipped TaskRuns immediately (they count as terminal for downstream deps).
+	for _, task := range toSkip {
+		templateType := resolveTaskTemplateType(wf, &task)
+		skippedPhase := model.PhaseSkipped
+		skipMsg := fmt.Sprintf("when condition %q evaluated to false", task.When)
+		skippedRun := &store.TaskRun{
+			RunID: e.idGen.Generate(idgen.Context{
+				WorkflowRunID: workflowRunID,
+				WorkflowKind:  wf.Kind,
+				TaskName:      task.Name,
+				TemplateName:  task.Template,
+			}),
+			WorkflowRunID: workflowRunID,
+			ParentRunID:   parentRunID,
+			Depth:         parentTR.Depth + 1,
+			Scope:         parentTR.TaskName + "/",
+			TaskName:      task.Name,
+			TemplateName:  task.Template,
+			TemplateType:  templateType,
+			Status:        &skippedPhase,
+			Message:       &skipMsg,
+		}
+		if err := e.store.CreateTaskRun(ctx, skippedRun); err != nil {
+			return false, err
+		}
+	}
+
+	// Persist executable tasks; the caller will reload them before activation.
+	for _, task := range toExecute {
+		templateType := resolveTaskTemplateType(wf, &task)
+		pendingPhase := model.PhaseCreated
+		newRun := &store.TaskRun{
+			RunID: e.idGen.Generate(idgen.Context{
+				WorkflowRunID: workflowRunID,
+				WorkflowKind:  wf.Kind,
+				TaskName:      task.Name,
+				TemplateName:  task.Template,
+			}),
+			WorkflowRunID: workflowRunID,
+			ParentRunID:   parentRunID,
+			Depth:         parentTR.Depth + 1,
+			Scope:         parentTR.TaskName + "/",
+			TaskName:      task.Name,
+			TemplateName:  task.Template,
+			TemplateType:  templateType,
+			Status:        &pendingPhase,
+		}
+		if err := e.store.CreateTaskRun(ctx, newRun); err != nil {
+			return false, err
+		}
+	}
+
+	return true, nil
 }
 
 // dispatchLeafTask builds and dispatches a TaskAssignment for a leaf task (templateType=task).

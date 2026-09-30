@@ -230,9 +230,33 @@ type LoopIterationResult struct {
 //	strategy:"list",  parameters:[]         → {status:["ok","fail","ok"], code:[0,1,0]}
 //
 // Called by advanceScope after allTerminal=true and tryAdvanceRepeatLoop returns false.
-func AggregateResults(results []LoopIterationResult, aggregate *model.Aggregate) (model.Phase, string, *model.Outputs) {
+// For zero iterations, list emits empty arrays for the filter's names, falling
+// back to declared output names when no filter is supplied. First/last emit no
+// value. The optional declaration does not affect nonempty aggregation.
+func AggregateResults(results []LoopIterationResult, aggregate *model.Aggregate, declarations ...*model.Outputs) (model.Phase, string, *model.Outputs) {
 	if len(results) == 0 {
-		return model.PhaseSucceeded, "", nil
+		if aggregate == nil || aggregate.Strategy != model.AggregateStrategyList {
+			return model.PhaseSucceeded, "", nil
+		}
+		names := aggregate.Parameters
+		if len(names) == 0 && len(declarations) > 0 && declarations[0] != nil {
+			names = make([]string, 0, len(declarations[0].Parameters))
+			for _, p := range declarations[0].Parameters {
+				names = append(names, p.Name)
+			}
+		}
+		var params []model.Parameter
+		seen := make(map[string]bool)
+		for _, name := range names {
+			if !seen[name] {
+				params = append(params, model.Parameter{Name: name, Value: json.RawMessage("[]")})
+				seen[name] = true
+			}
+		}
+		if len(params) == 0 {
+			return model.PhaseSucceeded, "", nil
+		}
+		return model.PhaseSucceeded, "", &model.Outputs{Phase: model.PhaseSucceeded, ExecOutputs: model.ExecOutputs{Parameters: params}}
 	}
 
 	// All strategies require every iteration to succeed first.
